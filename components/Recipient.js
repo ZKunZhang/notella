@@ -2,6 +2,7 @@ import { useContext } from "react";
 import { NotesContext } from "../context/NotesContext";
 import { LayoutContext } from "../context/LayoutContext";
 import NoteInRecipient from "./NoteInRecipient";
+import TagFilter from "./TagFilter"; // 新增：导入标签筛选组件
 
 export default function Recipient() {
   const { viewTrashedNotes, setSearchValue, filteredNotes } =
@@ -26,7 +27,7 @@ export default function Recipient() {
           <input
             onChange={(e) => setSearchValue(e.target.value)}
             type="text"
-            placeholder="Search by title..."
+            placeholder="Search by title or tags..." // 修改：更新占位符
             className={`mt-1 px-2 border ${
               darkMode ? "border-gray-700 text-white" : "border-gray-300"
             } rounded`}
@@ -34,13 +35,21 @@ export default function Recipient() {
           />
         </header>
 
+        {/* 新增：标签筛选组件 */}
+        <TagFilter />
+
         {filteredNotes.length === 0 ? (
           <p className="pt-4 text-center text-gray-500">
             {viewTrashedNotes ? "No trashed notes found." : "No notes found."}
           </p>
         ) : (
           filteredNotes.map((note) => (
-            <NoteInRecipient key={note.id} id={note.id} title={note.title} />
+            <NoteInRecipient
+              key={note.id}
+              id={note.id}
+              title={note.title}
+              tags={note.tags} // 新增：传递标签
+            />
           ))
         )}
       </aside>

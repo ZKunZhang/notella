@@ -5,6 +5,7 @@ import { LayoutContext } from "../context/LayoutContext";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import NotellaEmblem from "./NotellaEmblem";
+import TagInput from "./TagInput"; // 新增：导入标签输入组件
 
 export default function NotePreviewer() {
   const {
@@ -14,6 +15,7 @@ export default function NotePreviewer() {
     handleDeleteCurrentEditingNote,
     handleRemoveNoteFromTrash,
     handleDeleteNoteFromTrash,
+    handleTagsChange, // 新增：导入标签处理方法
   } = useContext(NotesContext);
 
   const { windowWidth, darkMode, panelIsActive, setPanelIsActive } =
@@ -128,31 +130,54 @@ export default function NotePreviewer() {
               </menu>
             </header>
 
-            <div className="notePreviewer__bodyContainer w-full h-full p-4 overflow-y-scroll">
-              {viewAsMarkdown ? (
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  className={`prose w-full h-full   ${
-                    darkMode ? "prose-invert" : "prose-stone"
+            <div className="notePreviewer__bodyContainer w-full h-full flex flex-col overflow-hidden">
+              {/* 内容区域 */}
+              <div className="flex-1 p-4 overflow-y-scroll">
+                {viewAsMarkdown ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    className={`prose w-full h-full   ${
+                      darkMode ? "prose-invert" : "prose-stone"
+                    }`}
+                  >
+                    {currentEditingNote.body}
+                  </ReactMarkdown>
+                ) : (
+                  <textarea
+                    value={currentEditingNote.body}
+                    disabled={viewTrashedNotes ? true : false}
+                    name="body"
+                    className={`noteBody__textarea ${
+                      darkMode ? "text-white" : ""
+                    }`}
+                    style={{ background: "none" }}
+                    onChange={(e) =>
+                      handleOnChangeCurrentEditingNote(e, currentEditingNote.id)
+                    }
+                    placeholder="Content goes here"
+                  ></textarea>
+                )}
+              </div>
+
+              {/* 标签区域 */}
+              <div
+                className={`p-4 border-t ${
+                  darkMode ? "border-gray-700 bg-gray-800" : "border-gray-300 bg-gray-50"
+                }`}
+              >
+                <label
+                  className={`block text-sm font-semibold mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
-                  {currentEditingNote.body}
-                </ReactMarkdown>
-              ) : (
-                <textarea
-                  value={currentEditingNote.body}
-                  disabled={viewTrashedNotes ? true : false}
-                  name="body"
-                  className={`noteBody__textarea ${
-                    darkMode ? "text-white" : ""
-                  }`}
-                  style={{ background: "none" }}
-                  onChange={(e) =>
-                    handleOnChangeCurrentEditingNote(e, currentEditingNote.id)
-                  }
-                  placeholder="Content goes here"
-                ></textarea>
-              )}
+                  Tags
+                </label>
+                <TagInput
+                  tags={currentEditingNote.tags || []}
+                  onChange={(tags) => handleTagsChange(tags, currentEditingNote.id)}
+                  disabled={viewTrashedNotes}
+                />
+              </div>
             </div>
           </>
         ) : (

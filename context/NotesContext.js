@@ -13,40 +13,51 @@ export const NotesProvider = ({ children, notes, trashedNotes }) => {
   const [userTrashedNotes, setUserTrashedNotes] = useState(trashedNotes);
 
   const [searchValue, setSearchValue] = useState("");
+  const [selectedTag, setSelectedTag] = useState(null); // 新增：标签筛选状态
   const [filteredNotes, setFilteredNotes] = useState([]);
 
   const [currentEditingNote, setCurrentEditingNote] = useState(null);
   const [viewTrashedNotes, setViewTrashedNotes] = useState(false);
   const [updatedNotes, setUpdatedNotes] = useState(false);
 
+  // 修改：增强的搜索和筛选逻辑，支持标题+标签匹配
   useEffect(() => {
-    const filterNotesBySearchTerm = () => {
-      if (searchValue === "") {
-        if (viewTrashedNotes) {
-          setFilteredNotes(userTrashedNotes);
-          return;
-        }
-        setFilteredNotes(userNotes);
-        return;
-      }
+    const filterNotesBySearchAndTag = () => {
+      // 选择笔记源
+      let results = viewTrashedNotes ? [...userTrashedNotes] : [...userNotes];
 
-      let results;
-      if (viewTrashedNotes) {
-        results = [...userTrashedNotes];
-      } else {
-        results = [...userNotes];
-      }
-
-      setFilteredNotes(
-        results.filter(
+      // 应用标签筛选
+      if (selectedTag) {
+        results = results.filter(
           (note) =>
-            note.title === searchValue || note.title.includes(searchValue)
-        )
-      );
+            note.tags &&
+            Array.isArray(note.tags) &&
+            note.tags.includes(selectedTag)
+        );
+      }
+
+      // 应用搜索筛选（同时匹配标题和标签）
+      if (searchValue) {
+        results = results.filter((note) => {
+          // 标题匹配
+          const titleMatch =
+            note.title === searchValue || note.title.includes(searchValue);
+
+          // 标签匹配
+          const tagMatch =
+            note.tags &&
+            Array.isArray(note.tags) &&
+            note.tags.some((tag) => tag.includes(searchValue));
+
+          return titleMatch || tagMatch;
+        });
+      }
+
+      setFilteredNotes(results);
     };
 
-    filterNotesBySearchTerm();
-  }, [searchValue, viewTrashedNotes, userNotes, userTrashedNotes]);
+    filterNotesBySearchAndTag();
+  }, [searchValue, selectedTag, viewTrashedNotes, userNotes, userTrashedNotes]);
 
   useEffect(() => {
     const updateNotes = async () => {
@@ -72,6 +83,7 @@ export const NotesProvider = ({ children, notes, trashedNotes }) => {
 
   useEffect(() => {
     setCurrentEditingNote(null);
+    setSelectedTag(null); // 切换视图时清除标签筛选
   }, [viewTrashedNotes]);
 
   const addNewNote = () => {
@@ -83,6 +95,7 @@ export const NotesProvider = ({ children, notes, trashedNotes }) => {
       id: nanoid(),
       title: "Untitled note",
       body: "Content goes here",
+      tags: [], // 新增：初始化空标签数组
     };
 
     // Append new note at the beginning
@@ -169,6 +182,21 @@ export const NotesProvider = ({ children, notes, trashedNotes }) => {
     setUserTrashedNotes(updatedTrashedNotes);
   };
 
+  // 新增：处理标签变更
+  const handleTagsChange = (tags, id) => {
+    const index = userNotes.findIndex((note) => note.id === id);
+    if (index === -1) return;
+
+    let copiedNote = Object.assign({}, userNotes[index]);
+    copiedNote.tags = tags;
+
+    const copiedNotes = [...userNotes];
+    copiedNotes.splice(index, 1, copiedNote);
+
+    setCurrentEditingNote(copiedNote);
+    setUserNotes(copiedNotes);
+  };
+
   return (
     <>
       <NotesContext.Provider
@@ -189,6 +217,9 @@ export const NotesProvider = ({ children, notes, trashedNotes }) => {
           setSearchValue,
           filteredNotes,
           updatedNotes,
+          selectedTag, // 新增
+          setSelectedTag, // 新增
+          handleTagsChange, // 新增
         }}
       >
         {children}
